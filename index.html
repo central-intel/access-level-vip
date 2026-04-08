@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SISTEMA CLASSIFICADO</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: #050a0f;
+            color: #00ff88;
+            font-family: 'Share Tech Mono', monospace;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0,255,100,0.015) 2px,
+                rgba(0,255,100,0.015) 4px
+            );
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .terminal {
+            width: 100%;
+            max-width: 480px;
+            background: rgba(5, 15, 10, 0.97);
+            border: 1px solid #00ff88;
+            border-radius: 4px;
+            padding: 28px 24px;
+            position: relative;
+            z-index: 1;
+            box-shadow: 0 0 40px rgba(0,255,136,0.08), inset 0 0 60px rgba(0,0,0,0.5);
+        }
+
+        .terminal-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 24px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid rgba(0,255,136,0.2);
+        }
+
+        .dot { width: 10px; height: 10px; border-radius: 50%; }
+        .dot.red { background: #ff5f57; }
+        .dot.yellow { background: #febc2e; }
+        .dot.green { background: #28c840; }
+
+        .header-title {
+            font-size: 11px;
+            color: rgba(0,255,136,0.5);
+            letter-spacing: 2px;
+            margin-left: auto;
+        }
+
+        .screen { display: none; }
+        .screen.active { display: block; }
+
+        .label {
+            font-size: 10px;
+            letter-spacing: 3px;
+            color: rgba(0,255,136,0.5);
+            margin-bottom: 6px;
+        }
+
+        .title {
+            font-size: 22px;
+            letter-spacing: 4px;
+            color: #00ff88;
+            margin-bottom: 20px;
+        }
+
+        .title.danger { color: #ff4444; }
+        .title.success { color: #00ff88; }
+
+        .blink { animation: blink 1s step-end infinite; }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        .scan-line {
+            font-size: 11px;
+            color: rgba(0,255,136,0.4);
+            letter-spacing: 1px;
+            margin-bottom: 16px;
+        }
+
+        /* INPUT — estilo da primeira versão, centrado, borda azul */
+        .input-wrapper { text-align: center; margin: 20px 0; }
+
+        input[type="password"] {
+            width: 80%;
+            padding: 15px;
+            background: #0d1117;
+            border: 2px solid #58a6ff;
+            border-radius: 5px;
+            color: #3fb950;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1.2rem;
+            letter-spacing: 6px;
+            text-align: center;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input[type="password"]:focus { border-color: #79c0ff; }
+
+        .btn-primary {
+            width: 100%;
+            padding: 14px;
+            background: transparent;
+            border: 1px solid #00ff88;
+            color: #00ff88;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 13px;
+            letter-spacing: 3px;
+            cursor: pointer;
+            border-radius: 3px;
+            transition: background 0.2s;
+        }
+
+        .btn-primary:hover { background: rgba(0,255,136,0.12); }
+        .btn-primary:active { opacity: 0.7; }
+
+        .error-msg {
+            font-size: 12px;
+            color: #ff4444;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+            display: none;
+        }
+
+        .phase-badge {
+            display: inline-block;
+            font-size: 10px;
+            letter-spacing: 3px;
+            padding: 4px 10px;
+            border: 1px solid rgba(0,255,136,0.3);
+            color: rgba(0,255,136,0.6);
+            border-radius: 2px;
+            margin-bottom: 14px;
+        }
+
+        .question {
+            font-size: 15px;
+            color: #c0ffd8;
+            letter-spacing: 1px;
+            line-height: 1.6;
+            margin-bottom: 22px;
+            padding: 14px;
+            border-left: 2px solid rgba(0,255,136,0.4);
+            background: rgba(0,255,136,0.04);
+        }
+
+        .options { display: flex; flex-direction: column; gap: 10px; }
+
+        .opt-btn {
+            width: 100%;
+            padding: 13px 16px;
+            background: transparent;
+            border: 1px solid rgba(0,255,136,0.25);
+            color: rgba(0,255,136,0.8);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 13px;
+            letter-spacing: 1px;
+            text-align: left;
+            cursor: pointer;
+            border-radius: 2px;
+            transition: all 0.15s;
+        }
+
+        .opt-btn::before { content: '[  ] '; color: rgba(0,255,136,0.4); }
+        .opt-btn:hover { background: rgba(0,255,136,0.08); border-color: rgba(0,255,136,0.6); color: #00ff88; }
+        .opt-btn.correct { background: rgba(0,255,136,0.15); border-color: #00ff88; color: #00ff88; }
+        .opt-btn.correct::before { content: '[OK] '; color: #00ff88; }
+        .opt-btn.wrong { background: rgba(255,50,50,0.1); border-color: rgba(255,50,50,0.6); color: rgba(255,80,80,0.8); }
+        .opt-btn.wrong::before { content: '[XX] '; color: #ff4444; }
+
+        .progress-wrap { margin: 20px 0 0; display: flex; gap: 6px; }
+
+        .step-dot {
+            flex: 1;
+            height: 3px;
+            background: rgba(0,255,136,0.15);
+            border-radius: 2px;
+            transition: background 0.4s;
+        }
+
+        .step-dot.done { background: #00ff88; }
+        .step-dot.active { background: rgba(0,255,136,0.5); animation: pulse 1s ease-in-out infinite; }
+        @keyframes pulse { 50% { background: #00ff88; } }
+
+        .blocked-box {
+            border: 1px solid rgba(255,80,80,0.7);
+            padding: 20px;
+            background: rgba(255,0,0,0.09);
+            border-radius: 3px;
+            margin: 16px 0;
+        }
+
+        .blocked-code {
+            font-size: 11px;
+            color: rgba(255,160,160,0.95);
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+        }
+
+        .blocked-text {
+            font-size: 13px;
+            color: #ffaaaa;
+            line-height: 1.8;
+            white-space: pre-line;
+        }
+
+        .tries-left {
+            font-size: 12px;
+            letter-spacing: 2px;
+            color: #ffcc66;
+            margin-top: 14px;
+            padding: 8px 12px;
+            border: 1px solid rgba(255,200,80,0.35);
+            border-radius: 2px;
+            background: rgba(255,200,0,0.05);
+        }
+
+        .btn-retry {
+            width: 100%;
+            padding: 13px;
+            background: transparent;
+            border: 1px solid rgba(255,60,60,0.5);
+            color: rgba(255,80,80,0.9);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 12px;
+            letter-spacing: 3px;
+            cursor: pointer;
+            border-radius: 2px;
+            margin-top: 16px;
+            transition: background 0.2s;
+        }
+
+        .btn-retry:hover { background: rgba(255,50,50,0.1); }
+
+        .final-content { text-align: center; padding: 10px 0; }
+
+        .access-code {
+            display: none;
+            margin-top: 24px;
+            padding: 20px;
+            border: 1px dashed rgba(0,255,136,0.5);
+            background: rgba(0,255,136,0.04);
+            border-radius: 3px;
+        }
+
+        .access-label {
+            font-size: 10px;
+            letter-spacing: 3px;
+            color: rgba(0,255,136,0.5);
+            margin-bottom: 10px;
+        }
+
+        .access-value {
+            font-size: 18px;
+            letter-spacing: 4px;
+            color: #00ff88;
+        }
+
+        .bar-wrap {
+            height: 4px;
+            background: rgba(0,255,136,0.1);
+            border-radius: 2px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+
+        #bar { width: 0; height: 100%; background: #00ff88; }
+
+        .status-line {
+            font-size: 11px;
+            color: rgba(0,255,136,0.5);
+            letter-spacing: 1px;
+            margin-top: 8px;
+        }
+
+        .skull { font-size: 28px; margin-bottom: 8px; }
+    </style>
+</head>
+<body>
+
+<div class="terminal">
+    <div class="terminal-header">
+        <div class="dot red"></div>
+        <div class="dot yellow"></div>
+        <div class="dot green"></div>
+        <div class="header-title">SISTEMA CLASSIFICADO v2.6</div>
+    </div>
+
+    <!-- S1: Autenticação -->
+    <div id="s1" class="screen active">
+        <div class="label">PROTOCOLO DE ACESSO</div>
+        <div class="title">AUTENTICAÇÃO<span class="blink">_</span></div>
+        <div class="scan-line">» Identificação de agente requerida...</div>
+        <div class="input-wrapper">
+            <input type="password" id="pass" placeholder="CÓDIGO" autocomplete="off"
+                   onkeydown="if(event.key==='Enter') check()">
+        </div>
+        <p class="error-msg" id="msg">!! CÓDIGO INVÁLIDO — ACESSO NEGADO</p>
+        <button class="btn-primary" onclick="check()">[ VERIFICAR IDENTIDADE ]</button>
+    </div>
+
+    <!-- S2: Quiz -->
+    <div id="s2" class="screen">
+        <div class="phase-badge" id="phase-badge">FASE 1 / 4</div>
+        <div class="question" id="question"></div>
+        <div class="options" id="options"></div>
+        <div class="progress-wrap" id="progress"></div>
+    </div>
+
+    <!-- S3: Bloqueado -->
+    <div id="s3" class="screen">
+        <div class="skull">⚠</div>
+        <div class="label">SISTEMA DE SEGURANÇA</div>
+        <div class="title danger">ACESSO BLOQUEADO<span class="blink">_</span></div>
+        <div class="blocked-box">
+            <div class="blocked-code" id="err-code">ERRO 403</div>
+            <div class="blocked-text" id="err-msg"></div>
+        </div>
+        <div class="tries-left" id="tries-left"></div>
+        <button class="btn-retry" onclick="resetQuiz()">[ TENTAR NOVAMENTE ]</button>
+    </div>
+
+    <!-- S4: Concedido -->
+    <div id="s4" class="screen">
+        <div class="final-content">
+            <div class="label">VERIFICAÇÃO CONCLUÍDA</div>
+            <div class="title success">IDENTIDADE CONFIRMADA<span class="blink">_</span></div>
+            <div class="scan-line">» A processar credenciais de agente...</div>
+            <div class="bar-wrap"><div id="bar"></div></div>
+            <div class="status-line" id="status-text">A inicializar...</div>
+            <div class="access-code" id="final">
+                <div class="access-label">CÓDIGO DE MISSÃO</div>
+                <div class="access-value">VIP-CHESS-SUECA-2026</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    var step = 0;
+    var tries = 0;
+    var qs = [
+        {
+            q: "Qual é a habilidade mais perigosa da agente identificada como 'Telma'?",
+            o: ["Capacidade de dar baile", "Estratégia no Banco", "Café morno"],
+            c: 0
+        },
+        {
+            q: "Qual é a principal ferramenta operacional do agente 'Pedro'?",
+            o: ["Iluminação de cenários", "Atuação como Homem Sábio", "Sobremesas táticas"],
+            c: 1
+        },
+        {
+            q: "Qual ameaça consta no perfil de campo da agente?",
+            o: ["Pasteleira profissional", "Iluminar cenários críticos", "Competências de alto nível"],
+            c: 2
+        },
+        {
+            q: "PROTOCOLO FINAL — Selecione a palavra-passe de missão:",
+            o: ["Sábio-007", "Doce Tentação", "Luz Verde"],
+            c: -1
+        }
+    ];
+
+    var statusMessages = [
+        "A verificar base de dados...",
+        "A autenticar credenciais...",
+        "A confirmar nível de acesso...",
+        "A gerar código de missão...",
+        "Concluído."
+    ];
+
+    function check() {
+        var p = document.getElementById('pass').value.toUpperCase().trim();
+        if (p === "TELMA" || p === "AGENTE-TELMA" || p === "AGENTE TELMA") {
+            show('s1', false);
+            show('s2', true);
+            renderQuestion();
+        } else {
+            var msg = document.getElementById('msg');
+            msg.style.display = 'block';
+            setTimeout(function () { msg.style.display = 'none'; }, 2500);
+        }
+    }
+
+    function renderQuestion() {
+        var item = qs[step];
+        document.getElementById('phase-badge').innerText = 'FASE ' + (step + 1) + ' / 4';
+        document.getElementById('question').innerText = item.q;
+
+        var html = "";
+        for (var i = 0; i < item.o.length; i++) {
+            html += '<button class="opt-btn" onclick="clickOpt(' + i + ', this)">' + item.o[i] + '</button>';
+        }
+        document.getElementById('options').innerHTML = html;
+
+        var prog = "";
+        for (var j = 0; j < 4; j++) {
+            var cls = j < step ? 'done' : (j === step ? 'active' : '');
+            prog += '<div class="step-dot ' + cls + '"></div>';
+        }
+        document.getElementById('progress').innerHTML = prog;
+    }
+
+    function clickOpt(idx, btn) {
+        if (step === 3) {
+            goError();
+            return;
+        }
+        if (idx === qs[step].c) {
+            btn.className = "opt-btn correct";
+            disableOptions();
+            setTimeout(function () { step++; renderQuestion(); }, 600);
+        } else {
+            btn.className = "opt-btn wrong";
+            setTimeout(function () { btn.className = "opt-btn"; }, 600);
+        }
+    }
+
+    function disableOptions() {
+        var btns = document.getElementById('options').querySelectorAll('.opt-btn');
+        for (var i = 0; i < btns.length; i++) btns[i].disabled = true;
+    }
+
+    function goError() {
+        tries++;
+        var isLast = tries >= 3;
+
+        if (isLast) {
+            if (!confirm("Última tentativa. Tens mesmo a certeza desta vez? Pensa bem.")) {
+                tries--;
+                return;
+            }
+            show('s2', false);
+            goFinal();
+            return;
+        }
+
+        show('s2', false);
+        show('s3', true);
+
+        var codes = ["ERRO 403", "ERRO 502"];
+        var msgs = [
+            "Hesitação detetada no protocolo final.\nTomaste atenção ao que estavas a fazer?",
+            "Firewall ativa — resposta incongruente.\nA Telma está a tentar sabotar a própria missão?"
+        ];
+        var triesMsg = [
+            "» Dispõe de mais 2 tentativas antes do bloqueio definitivo.",
+            "» ATENÇÃO: Resta apenas 1 tentativa."
+        ];
+
+        document.getElementById('err-code').innerText = codes[tries - 1];
+        document.getElementById('err-msg').innerText = msgs[tries - 1];
+        document.getElementById('tries-left').innerText = triesMsg[tries - 1];
+    }
+
+    function resetQuiz() {
+        step = 0;
+        show('s3', false);
+        show('s2', true);
+        renderQuestion();
+    }
+
+    function goFinal() {
+        show('s4', true);
+        var w = 0;
+        var b = document.getElementById('bar');
+        var st = document.getElementById('status-text');
+        var msgIdx = 0;
+
+        var it = setInterval(function () {
+            w++;
+            b.style.width = w + "%";
+            var threshold = Math.floor((msgIdx + 1) * 20);
+            if (w >= threshold && msgIdx < statusMessages.length) {
+                st.innerText = '» ' + statusMessages[msgIdx];
+                msgIdx++;
+            }
+            if (w >= 100) {
+                clearInterval(it);
+                document.getElementById('final').style.display = 'block';
+            }
+        }, 25);
+    }
+
+    function show(id, visible) {
+        document.getElementById(id).className = visible ? 'screen active' : 'screen';
+    }
+</script>
+</body>
+</html>
